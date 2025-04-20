@@ -1,45 +1,56 @@
-# # 🏠 Smart-Home Electronic Safety and Monitoring System
+# 🔌 Smart Home Automation System with Real-Time Energy Monitoring
 
-Sistem **Smart-Home Electronic Safety and Monitoring System** adalah solusi otomatisasi rumah berbasis mikrokontroler yang dirancang untuk meningkatkan keamanan dan kenyamanan penghuni. Sistem ini memantau kondisi rumah secara real-time serta memberikan respons terhadap situasi darurat seperti kebocoran gas, suhu tinggi, atau kehadiran orang asing.
+## 📘 Deskripsi Proyek
 
-## 📌 Fitur Utama
+Proyek ini bertujuan untuk mengembangkan **sistem automasi rumah pintar (Smart Home Automation System)** yang dapat memantau dan mengontrol peralatan elektronik secara real-time. Sistem ini juga dilengkapi dengan fitur **auto cut-off** untuk menjaga peralatan rumah tangga dari fluktuasi tegangan yang berasal dari jaringan listrik PLN.
 
-- 🔥 **Deteksi Suhu dan Kebakaran**: Menggunakan sensor suhu (seperti DHT22/LM35) untuk mendeteksi suhu abnormal yang berpotensi menyebabkan kebakaran.
-- 🛑 **Deteksi Gas Berbahaya**: Sensor gas (seperti MQ-2/MQ-135) mendeteksi adanya kebocoran gas LPG atau asap.
-- 👁️ **Pemantauan Kehadiran**: Sensor PIR untuk mendeteksi pergerakan mencurigakan saat rumah dalam kondisi kosong.
-- 💡 **Kontrol Perangkat Elektronik**: Otomatisasi lampu, kipas, dan alat elektronik lain berdasarkan kondisi lingkungan.
-- 📟 **Antarmuka LCD / Web Monitoring**: Menampilkan status sensor secara real-time melalui LCD atau dashboard monitoring berbasis Python GUI / web.
-- 📱 **Pemberitahuan Darurat**: Opsional untuk mengirim notifikasi ke HP atau email menggunakan modul tambahan (ESP8266 / GSM).
+## 🎯 Tujuan
 
-## 🧰 Teknologi dan Tools
+- Mengontrol peralatan elektronik rumah secara otomatis.
+- Memantau konsumsi energi listrik secara akurat.
+- Melindungi perangkat dari lonjakan atau drop tegangan melalui fitur auto cut-off.
 
-- 🖥️ **Mikrokontroler**: Arduino (Uno/Nano)
-- 🔌 **Sensor**: DHT22, MQ-2, PIR, Flame sensor, Sensor level air
-- 📊 **Interface**: LCD I2C 16x2 / GUI Python (Tkinter) / Web (Flask - opsional)
-- 🔁 **Komunikasi**: UART Serial, RF/ESP jika menggunakan jaringan
-- ⚙️ **Bahasa Pemrograman**: Arduino C++, Python
+## 🧠 Komponen Utama
 
-## 🔧 Cara Kerja
+| Komponen       | Fungsi                                                                 |
+|----------------|------------------------------------------------------------------------|
+| Arduino Mega   | Mikrokontroler utama yang mengatur komunikasi dan pengolahan data.     |
+| ACS712         | Sensor arus untuk mengukur konsumsi arus listrik.                      |
+| ZMPT101B       | Sensor tegangan AC untuk memantau tegangan dari sumber PLN.            |
+| Relay SPDT     | Saklar otomatis untuk mengontrol perangkat listrik seperti lampu.      |
+| Sensor Tambahan| Sensor-sensor lain untuk mendukung fungsi Smart Home tambahan.         |
 
-1. Sensor-sensor aktif membaca kondisi lingkungan.
-2. Data dikirim ke mikrokontroler.
-3. Mikrokontroler memproses data dan mengambil aksi:
-   - Menghidupkan buzzer jika terdeteksi bahaya.
-   - Menampilkan data ke LCD atau GUI.
-   - Mengaktifkan atau menonaktifkan perangkat elektronik.
-4. (Opsional) Kirim notifikasi ke pemilik rumah melalui jaringan.
+## 🔗 Komunikasi Sistem
 
-## 📷 Dokumentasi / Demo
+Sistem menggunakan **komunikasi UART TTL** untuk mentransmisikan data antar perangkat dan sensor secara real-time. Arduino Mega memproses input dari sensor, lalu mengambil tindakan sesuai logika program.
 
-> Tambahkan gambar skematik, foto alat, atau video demo jika tersedia di sini.
+## ⚡ Fitur Utama
 
-## 🚀 Cara Menjalankan
+- **Auto Cut-Off:** Memutus sambungan perangkat jika terjadi fluktuasi tegangan di luar ambang batas aman.
+- **Monitoring Energi:** Penggunaan sensor ACS712 dan ZMPT101B untuk memantau konsumsi arus dan tegangan secara real-time.
+- **Kontrol Perangkat Otomatis:** Menggunakan Relay SPDT yang dikendalikan berdasarkan data dari sensor.
 
-### 1. Arduino
-- Upload kode ke Arduino melalui Arduino IDE.
-- Sambungkan sensor ke pin yang sesuai.
+## 📊 Diagram Blok dan Flowchart
 
-### 2. Python GUI (opsional)
+![Diagram Blok Sistem](./block_diagram.png)
+*Ilustrasi koneksi antar komponen utama.*
+
+![Flowchart Logika Program](./flowchart_program.png)
+*Logika pengambilan keputusan untuk auto cut-off.*
+
+## 🚀 Pengembangan Selanjutnya
+
+- Integrasi dengan koneksi WiFi (ESP8266/ESP32) untuk kontrol via aplikasi mobile.
+- Dashboard berbasis web untuk pemantauan konsumsi daya secara grafis.
+- Otomatisasi berdasarkan waktu, cuaca, atau sensor gerak.
+
+## 📁 Struktur Direktori (Opsional)
 ```bash
-pip install pyserial tkinter
-python monitoring_gui.py
+SmartHome-Automation/
+│
+├── src/                      # Kode program Arduino
+├── images/                   # Diagram dan flowchart sistem
+│   ├── block_diagram.png
+│   └── flowchart_program.png
+├── README.md                 # Dokumentasi proyek
+└── docs/                     # Panduan penggunaan & pengembangan
