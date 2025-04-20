@@ -18,7 +18,7 @@ Proyek ini bertujuan untuk mengembangkan **sistem automasi rumah pintar (Smart H
 | ACS712         | Sensor arus untuk mengukur konsumsi arus listrik.                      |
 | ZMPT101B       | Sensor tegangan AC untuk memantau tegangan dari sumber PLN.            |
 | Relay SPDT     | Saklar untuk mengontrol perangkat listrik seperti lampu.      |
-| MCB 1 Phase    | Proteksi arus lebih dan hubung singkat; memutus aliran saat overload.  |
+| MCB 1 Phase    | Proteksi arus lebih dan hubung singkat memutus aliran saat overload.  |
 | Sensor Tambahan| Sensor-sensor lain untuk mendukung fungsi Smart Home tambahan.         |
 
 
