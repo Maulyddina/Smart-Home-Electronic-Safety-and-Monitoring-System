@@ -1,4 +1,4 @@
-# 🔌 Smart Home Automation System with Real-Time Energy Monitoring
+# 🔌 Smart Home Electronic Safety and Monitoring System
 
 ## 📘 Deskripsi Proyek
 
