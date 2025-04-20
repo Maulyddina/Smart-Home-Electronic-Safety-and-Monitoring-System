@@ -30,19 +30,31 @@ Sistem menggunakan **komunikasi UART TTL** untuk mentransmisikan data antar pera
 - **Monitoring Energi:** Penggunaan sensor ACS712 dan ZMPT101B untuk memantau konsumsi arus dan tegangan secara real-time.
 - **Kontrol Perangkat Otomatis:** Menggunakan Relay SPDT yang dikendalikan berdasarkan data dari sensor.
 
+## 🧩 Penjelasan Alur Sistem
+
+- **Kabel fasa dan netral dari MCB PLN** terlebih dahulu masuk ke **input sensor ZMPT101B**. Sensor ini digunakan untuk membaca nilai tegangan dalam bentuk ADC (Analog to Digital Converter) yang kemudian akan diumpankan ke **pin analog mikrokontroler AVR**.
+
+- **Mikrokontroler AVR** berkomunikasi dengan **laptop melalui komunikasi serial UART**, yang berfungsi sebagai antarmuka dan pusat kontrol untuk mengaktifkan atau menonaktifkan perangkat elektronik dari satu tempat.
+
+- Pada **relay 5V**, pin **pole (common)** dihubungkan ke kabel fasa dari MCB PLN, pin **NO (Normally Open)** dihubungkan ke input MCB 1 phase, dan pin **coil** dihubungkan ke **pin output dari mikrokontroler AVR**.
+
+- Jika **mikrokontroler AVR menerima perintah aktivasi dari laptop**, maka ia akan mengaktifkan pin output yang telah ditentukan, sehingga mengaktifkan relay dan menyebabkan perangkat elektronik menyala. Namun, hal ini hanya akan terjadi **jika tidak terdeteksi adanya fluktuasi tegangan atau hubung singkat**.
+
+- **Perintah pengaktifan perangkat elektronik tidak akan diproses jika terjadi fluktuasi tegangan**, karena fungsi pendeteksi fluktuasi diletakkan pada **interrupt**, yang memiliki prioritas lebih tinggi dibanding program utama (`main loop`). 
+
+- Selain itu, jika terjadi **hubung singkat**, maka aktivasi perangkat tidak dapat dilakukan karena **MCB secara otomatis akan melakukan pemutusan arus (OFF)** untuk proteksi sistem.
+
+- **Sensor ACS712** digunakan untuk membaca arus listrik yang kemudian akan digunakan untuk **perhitungan daya listrik (Watt)** secara real-time.
+
 ## 📊 Diagram Blok dan Flowchart
 
 *Diagram Blok Sistem.*
 
 ![Diagram Hardware](https://github.com/user-attachments/assets/b0157a11-7a6a-47e7-8a83-55169e7f089e)
 
+*Flowchart.*
 
-*Flowchart .*
 ![Flowchart Logika Program](./flowchart_program.png)
-
-
-
-
 
 ## 🚀 Pengembangan Selanjutnya
 
