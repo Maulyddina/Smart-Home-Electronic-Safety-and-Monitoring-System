@@ -32,14 +32,13 @@ Sistem menggunakan **komunikasi UART TTL** untuk mentransmisikan data antar pera
 
 ## 📊 Diagram Blok dan Flowchart
 
-![Diagram Blok Sistem](./block_diagram.png)
-*Ilustrasi koneksi antar komponen utama.*
+![Diagram Hardware](https://github.com/user-attachments/assets/b0157a11-7a6a-47e7-8a83-55169e7f089e)
+
 
 ![Flowchart Logika Program](./flowchart_program.png)
 *Logika pengambilan keputusan untuk auto cut-off.*
 
-![Diagram Hardware Yang Akan Digunakan]
-![Diagram Hardware](https://github.com/user-attachments/assets/b0157a11-7a6a-47e7-8a83-55169e7f089e)
+
 
 
 ## 🚀 Pengembangan Selanjutnya
