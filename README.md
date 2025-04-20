@@ -62,7 +62,8 @@ Sistem menggunakan **komunikasi UART TTL** untuk mentransmisikan data antar pera
 
 *Diagram Blok Sistem.*
 
-![Diagram Hardware](https://github.com/user-attachments/assets/b0157a11-7a6a-47e7-8a83-55169e7f089e)
+![Diagram Hardware](https://github.com/user-attachments/assets/68ff35f3-2189-4610-88c4-a1e232965c26)
+
 
 
 ## 🚀 Pengembangan Selanjutnya
