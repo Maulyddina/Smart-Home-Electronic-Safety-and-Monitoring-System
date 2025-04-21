@@ -21,9 +21,9 @@ except Exception as e:
 root = tk.Tk()
 root.title("Smart Voltage Monitor")
 root.geometry("1350x800")
-root.configure(bg="#1e1e2f")
+root.configure(bg="#0f172a")  # dark navy blue
 
-# --- Global variables ---
+# --- Global Variables ---
 time_data = []
 voltage_data = []
 load_on = False
@@ -33,77 +33,84 @@ last_update_time = time.time()
 # --- Styles ---
 style = ttk.Style()
 style.theme_use('clam')
-style.configure("TLabel", background="#1e1e2f", foreground="white", font=("Segoe UI", 12))
-style.configure("TButton", background="#00bfa6", foreground="white", font=("Segoe UI", 10, "bold"))
-style.configure("TLabelframe", background="#2b2d42", foreground="white")
-style.configure("TLabelframe.Label", font=("Segoe UI", 12, "bold"))
+style.configure("TLabel", background="#0f172a", foreground="white", font=("Segoe UI", 12))
+style.configure("TButton", background="#1e293b", foreground="white", font=("Segoe UI", 10, "bold"))
+style.configure("Custom.TLabelframe", background="#1e293b", foreground="white", font=("Segoe UI", 12, "bold"))
+style.configure("Custom.TLabelframe.Label", background="#1e293b", foreground="white")
 
-# --- Title & Status ---
-ttk.Label(root, text="Lurcotte Monitoring", font=("Segoe UI", 20, "bold")).pack(pady=15)
-status_label = ttk.Label(root, text=serial_status)
-status_label.pack()
+# --- Header ---
+header_frame = tk.Frame(root, bg="#1e293b")
+header_frame.pack(fill=tk.X, padx=0, pady=0)
 
-# --- Main Frame (Chart + Sidebar) ---
-main_frame = tk.Frame(root, bg="#1e1e2f")
+app_title = tk.Label(header_frame, text="⚡ Lurcotte", font=("Segoe UI", 20, "bold"), fg="#00f5d4", bg="#1e293b")
+app_title.pack(pady=10)
+status_label = ttk.Label(header_frame, text=serial_status)
+status_label.pack(pady=2)
+
+# --- Main Frame ---
+main_frame = tk.Frame(root, bg="#0f172a")
 main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
 # --- Chart Frame ---
-frame_chart = tk.Frame(main_frame, bg="#2b2d42")
-frame_chart.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+frame_chart = tk.Frame(main_frame, bg="#1e293b")
+frame_chart.grid(row=0, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+main_frame.grid_rowconfigure(0, weight=3)
+main_frame.grid_columnconfigure(0, weight=3)
+main_frame.grid_columnconfigure(1, weight=1)
 
-fig, ax = plt.subplots(figsize=(9, 4), facecolor='#2b2d42')
-fig.patch.set_facecolor('#2b2d42')
-ax.set_facecolor('#2b2d42')
+fig, ax = plt.subplots(figsize=(10, 4), facecolor='#1e293b')
+fig.patch.set_facecolor('#1e293b')
+ax.set_facecolor('#1e293b')
 ax.tick_params(colors='white')
 for spine in ax.spines.values():
     spine.set_color('white')
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 line, = ax.plot([], [], color='#00ffcc', linewidth=2, label='Voltage PLN')
-ax.legend(loc='upper left', facecolor='#2b2d42', edgecolor='white', labelcolor='white')
+ax.legend(loc='upper left', facecolor='#1e293b', edgecolor='white', labelcolor='white')
 canvas = FigureCanvasTkAgg(fig, master=frame_chart)
 canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-# --- Sidebar Frame (Kanan) ---
-sidebar = tk.Frame(main_frame, bg="#1e1e2f", width=300)
-sidebar.pack(side=tk.LEFT, fill=tk.Y)
+# --- Info Panel ---
+info_panel = tk.Frame(main_frame, bg="#1e293b")
+info_panel.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
 
-# --- Info Voltage Saat Ini ---
-current_voltage_label = ttk.Label(sidebar, text="Voltage Saat Ini: -- V", font=("Segoe UI", 14, "bold"))
-current_voltage_label.pack(pady=10)
+current_voltage_label = ttk.Label(info_panel, text="Voltage Saat Ini: -- V", font=("Segoe UI", 16, "bold"))
+current_voltage_label.pack(pady=15)
 
 # --- Load Control Frame ---
-load_frame = ttk.Labelframe(sidebar, text="💡 Kontrol Beban")
-load_frame.pack(pady=10, fill=tk.X, padx=10)
+load_frame = ttk.Labelframe(info_panel, text="Kontrol Beban", style="Custom.TLabelframe")
+load_frame.pack(fill=tk.X, padx=10, pady=10)
 
 def toggle_load():
     global load_on
     load_on = not load_on
-    load_status_label.config(text="Status: 🔆 ON" if load_on else "Status: 💡 OFF")
+    load_status_label.config(text="Lampu: 🔆 ON" if load_on else "Lampu: 💡 OFF")
     btn_load_toggle.config(text="Matikan" if load_on else "Nyalakan")
 
 btn_load_toggle = ttk.Button(load_frame, text="Nyalakan", command=toggle_load)
-btn_load_toggle.pack(pady=10, padx=10)
+btn_load_toggle.pack(pady=8)
 
-load_status_label = ttk.Label(load_frame, text="Status: 💡 OFF", font=("Segoe UI", 12))
+load_status_label = ttk.Label(load_frame, text="Lampu: 💡 OFF", font=("Segoe UI", 14))
 load_status_label.pack(pady=5)
 
 # --- Energy Info Frame ---
-info_energy_frame = ttk.Labelframe(sidebar, text="📊 Informasi Daya")
-info_energy_frame.pack(pady=10, fill=tk.X, padx=10)
+info_energy_frame = ttk.Labelframe(info_panel, text="Informasi Daya", style="Custom.TLabelframe")
+info_energy_frame.pack(fill=tk.X, padx=10, pady=10)
 
-power_label = ttk.Label(info_energy_frame, text="Daya (kWh): 0.000", font=("Segoe UI", 12))
-power_label.pack(pady=5)
+power_label = ttk.Label(info_energy_frame, text="Daya (kWh): 0.000")
+power_label.pack(pady=8)
 
-cost_label = ttk.Label(info_energy_frame, text="Biaya (Rp): 0", font=("Segoe UI", 12))
-cost_label.pack(pady=5)
+cost_label = ttk.Label(info_energy_frame, text="Biaya (Rp): 0")
+cost_label.pack(pady=8)
 
-# --- Footer (Credit) ---
-ttk.Label(root, text="Dikembangkan oleh Lurcotte Cooperation | 2025", font=("Segoe UI", 10), foreground="gray").pack(pady=5)
+# --- Footer Note ---
+footer = tk.Label(root, text="Developed by Lurcotte Corporation | Politeknik Elektronika Negeri Surabaya", font=("Segoe UI", 10), bg="#0f172a", fg="#94a3b8")
+footer.pack(pady=5)
 
-# --- Update Chart Function ---
+# --- Update Graph ---
 def update_graph():
     ax.clear()
-    ax.set_facecolor('#2b2d42')
+    ax.set_facecolor('#1e293b')
     ax.tick_params(colors='white')
     for spine in ax.spines.values():
         spine.set_color('white')
@@ -112,7 +119,7 @@ def update_graph():
     ax.set_title("Voltage PLN vs Waktu", color='white')
     ax.set_xlabel("Waktu", color='white')
     ax.set_ylabel("Tegangan (V)", color='white')
-    ax.legend(loc='upper left', facecolor='#2b2d42', edgecolor='white', labelcolor='white')
+    ax.legend(loc='upper left', facecolor='#1e293b', edgecolor='white', labelcolor='white')
     canvas.draw()
 
 # --- Serial Read Thread ---
@@ -145,10 +152,10 @@ def read_serial():
             last_update_time = current_time
 
             if load_on:
-                current_power = voltage * 0.2  # Asumsi 200W (0.2 kW)
-                energy = current_power * (elapsed / 3600.0)  # dalam kWh
+                current_power = voltage * 0.2
+                energy = current_power * (elapsed / 3600.0)
                 power_accumulated_kwh += energy
-                biaya = power_accumulated_kwh * 1500  # asumsi Rp1500/kWh
+                biaya = power_accumulated_kwh * 1500
 
                 power_label.config(text=f"Daya (kWh): {power_accumulated_kwh:.3f}")
                 cost_label.config(text=f"Biaya (Rp): {int(biaya):,}".replace(',', '.'))
@@ -159,7 +166,7 @@ def read_serial():
             print("Error membaca data serial:", e)
             time.sleep(2)
 
-# --- Start Serial Thread ---
+# --- Start Thread ---
 threading.Thread(target=read_serial, daemon=True).start()
 
 # --- Run App ---
