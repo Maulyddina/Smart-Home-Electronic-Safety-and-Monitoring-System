@@ -1,0 +1,105 @@
+#include <avr/io.h>
+#include <util/delay.h>
+#include <math.h>
+
+#define F_CPU 16000000UL
+#define BAUD 9600
+#define MYUBRR F_CPU/16/BAUD-1
+
+#define ADC_CHANNEL 0
+
+// --- Inisialisasi UART ---
+void uart_init(unsigned int ubrr) {
+    UBRR0H = (unsigned char)(ubrr>>8);
+    UBRR0L = (unsigned char)ubrr;
+    UCSR0B = (1<<TXEN0);    // Enable transmitter
+    UCSR0C = (1<<UCSZ01) | (1<<UCSZ00); // 8-bit data
+}
+
+void uart_transmit(unsigned char data) {
+    while (!(UCSR0A & (1<<UDRE0)));
+    UDR0 = data;
+}
+
+void uart_print(const char *str) {
+    while(*str) {
+        uart_transmit(*str++);
+    }
+}
+
+// --- Inisialisasi ADC ---
+void adc_init(void) {
+    ADMUX = (1<<REFS0);                     // AVcc as reference
+    ADCSRA = (1<<ADEN) | (1<<ADPS2) | (1<<ADPS1);  // Enable ADC, prescaler 64
+}
+
+uint16_t adc_read(uint8_t ch) {
+    ADMUX = (ADMUX & 0xF0) | (ch & 0x0F);    // select ADC channel
+    ADCSRA |= (1<<ADSC);                     // start conversion
+    while (ADCSRA & (1<<ADSC));               // wait for conversion to complete
+    return ADC;
+}
+
+// --- Fungsi Statistik (Moving Window Sigma) ---
+#define WINDOW_SIZE 200
+
+uint16_t samples[WINDOW_SIZE];
+uint16_t sample_index = 0;
+
+void add_sample(uint16_t value) {
+    samples[sample_index++] = value;
+    if (sample_index >= WINDOW_SIZE) {
+        sample_index = 0;
+    }
+}
+
+float calculate_sigma(void) {
+    float mean = 0;
+    float sum_sq = 0;
+    for (uint16_t i = 0; i < WINDOW_SIZE; i++) {
+        mean += samples[i];
+    }
+    mean /= WINDOW_SIZE;
+    
+    for (uint16_t i = 0; i < WINDOW_SIZE; i++) {
+        sum_sq += (samples[i] - mean) * (samples[i] - mean);
+    }
+    
+    return sqrt(sum_sq / WINDOW_SIZE);
+}
+
+// --- Main Program ---
+int main(void) {
+    uart_init(MYUBRR);
+    adc_init();
+
+    uart_print("AC Voltmeter\r\n");
+
+    const float intercept = -0.04;
+    const float slope = 0.0964;
+    const float scaling_factor = 49.3231;
+
+    uint32_t previousMillis = 0;
+
+    while (1) {
+        uint16_t sensor_value = adc_read(ADC_CHANNEL);
+        add_sample(sensor_value);
+
+        // delay sampling sedikit
+        _delay_ms(5);
+
+        uint32_t currentMillis = (uint32_t)(F_CPU / 64 / 1000) * (TCNT0);
+
+        if (currentMillis - previousMillis >= 1000) { // 1 second
+            previousMillis = currentMillis;
+            
+            float sigma = calculate_sigma();
+            float voltage = (intercept + slope * sigma) * scaling_factor;
+
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "Voltage: %.2f\r\n", voltage);
+            uart_print(buffer);
+        }
+    }
+}
+
