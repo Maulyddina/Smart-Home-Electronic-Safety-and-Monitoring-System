@@ -6,9 +6,9 @@ Proyek ini bertujuan untuk mengembangkan **sistem automasi rumah pintar (Smart H
 
 ## 🎯 Tujuan
 
-- Mengontrol peralatan elektronik rumah secara otomatis.
-- Memantau konsumsi energi listrik secara akurat.
-- Melindungi perangkat dari lonjakan atau drop tegangan melalui fitur auto cut-off.
+- Mengontrol peralatan elektronik rumah secara dari satu titik pusat.
+- Memantau konsumsi energi listrik dan menghitung biaya secara akurat.
+- Melindungi perangkat dari overvoltage atau undervoltage melalui fitur auto cut-off.
 
 ## 🧠 Komponen Utama
 
@@ -17,8 +17,10 @@ Proyek ini bertujuan untuk mengembangkan **sistem automasi rumah pintar (Smart H
 | Arduino Mega   | Mikrokontroler utama yang mengatur komunikasi dan pengolahan data.     |
 | ACS712         | Sensor arus untuk mengukur konsumsi arus listrik.                      |
 | ZMPT101B       | Sensor tegangan AC untuk memantau tegangan dari sumber PLN.            |
-| Relay SPDT     | Saklar otomatis untuk mengontrol perangkat listrik seperti lampu.      |
+| Relay SPDT     | Saklar untuk mengontrol perangkat listrik seperti lampu.      |
+| MCB 1 Phase    | Proteksi arus lebih dan hubung singkat memutus aliran saat overload.  |
 | Sensor Tambahan| Sensor-sensor lain untuk mendukung fungsi Smart Home tambahan.         |
+
 
 ## 🔗 Komunikasi Sistem
 
@@ -28,7 +30,7 @@ Sistem menggunakan **komunikasi UART TTL** untuk mentransmisikan data antar pera
 
 - **Auto Cut-Off:** Memutus sambungan perangkat jika terjadi fluktuasi tegangan di luar ambang batas aman.
 - **Monitoring Energi:** Penggunaan sensor ACS712 dan ZMPT101B untuk memantau konsumsi arus dan tegangan secara real-time.
-- **Kontrol Perangkat Otomatis:** Menggunakan Relay SPDT yang dikendalikan berdasarkan data dari sensor.
+- **Kontrol Perangkat Secara Terpusat:** Semua perangkat bisa dikontrol dari satu titik pusat melalui Komputer/laptop via UART.
 
 ## 🧩 Penjelasan Alur Sistem
 
@@ -40,21 +42,29 @@ Sistem menggunakan **komunikasi UART TTL** untuk mentransmisikan data antar pera
 
 - Jika **mikrokontroler AVR menerima perintah aktivasi dari laptop**, maka ia akan mengaktifkan pin output yang telah ditentukan, sehingga mengaktifkan relay dan menyebabkan perangkat elektronik menyala. Namun, hal ini hanya akan terjadi **jika tidak terdeteksi adanya fluktuasi tegangan atau hubung singkat**.
 
-- **Perintah pengaktifan perangkat elektronik tidak akan diproses jika terjadi fluktuasi tegangan**, karena fungsi pendeteksi fluktuasi diletakkan pada **interrupt**, yang memiliki prioritas lebih tinggi dibanding program utama (`main loop`). 
+- **Perintah pengaktifan perangkat elektronik tidak akan diproses jika terjadi fluktuasi tegangan**, karena fungsi pendeteksi fluktuasi memiliki prioritas lebih tinggi. 
 
 - Selain itu, jika terjadi **hubung singkat**, maka aktivasi perangkat tidak dapat dilakukan karena **MCB secara otomatis akan melakukan pemutusan arus (OFF)** untuk proteksi sistem.
 
 - **Sensor ACS712** digunakan untuk membaca arus listrik yang kemudian akan digunakan untuk **perhitungan daya listrik (Watt)** secara real-time.
 
-## 📊 Diagram Blok dan Flowchart
 
-*Diagram Blok Sistem.*
+## 📊 Mind Map, Flowchart dan Diagram Blok
 
-![Diagram Hardware](https://github.com/user-attachments/assets/b0157a11-7a6a-47e7-8a83-55169e7f089e)
+*Mind Map.*
+
+![Mind Map](https://github.com/user-attachments/assets/68314629-e209-4303-87ca-301ea59e8e5e)
+
 
 *Flowchart.*
 
-![Flowchart Logika Program](./flowchart_program.png)
+![Flowchart Logika Kerja](https://github.com/user-attachments/assets/52e0e276-9046-4dce-b638-a6a6c75a07c6)
+
+*Diagram Blok Sistem.*
+
+![Diagram Hardware](https://github.com/user-attachments/assets/68ff35f3-2189-4610-88c4-a1e232965c26)
+
+
 
 ## 🚀 Pengembangan Selanjutnya
 

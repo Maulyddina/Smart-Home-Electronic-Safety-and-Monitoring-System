@@ -1,0 +1,146 @@
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdio.h>
+
+#define F_CPU 16000000UL   // Clock 16 MHz
+#define BAUD 9600
+#define MYUBRR F_CPU/16/BAUD-1
+
+// Konstanta
+double vRef = 4720.0;
+int iter = 2000;
+double vMid = 2360.0; // vRef/2
+double mVpA = 0.185;
+double pADC = 0;
+unsigned long awalPrint = 0;
+unsigned long jeda = 5000;
+
+// Fungsi UART
+void uart_init(unsigned int ubrr) {
+    UBRR0H = (unsigned char)(ubrr>>8);
+    UBRR0L = (unsigned char)ubrr;
+    UCSR0B = (1<<TXEN0) | (1<<RXEN0);    // Enable receiver and transmitter
+    UCSR0C = (1<<UCSZ01) | (1<<UCSZ00);  // 8-bit data
+}
+
+void uart_transmit(unsigned char data) {
+    while (!(UCSR0A & (1<<UDRE0)));
+    UDR0 = data;
+}
+
+void uart_print(char* str) {
+    while (*str) {
+        uart_transmit(*str++);
+    }
+}
+
+// Fungsi ADC
+void adc_init() {
+    ADMUX = (1<<REFS0); // AVCC reference
+    ADCSRA = (1<<ADEN) | (1<<ADPS2) | (1<<ADPS1); // Enable ADC, prescaler 64
+}
+
+uint16_t adc_read(uint8_t ch) {
+    ch &= 0b00000111; // Mask channel
+    ADMUX = (ADMUX & 0xF8) | ch;
+    ADCSRA |= (1<<ADSC); // Start conversion
+    while (ADCSRA & (1<<ADSC));
+    return (ADC);
+}
+
+// Fungsi pembantu
+void uart_print_num(double val) {
+    char buf[32];
+    dtostrf(val, 0, 2, buf);
+    uart_print(buf);
+}
+
+unsigned long millis_timer() {
+    return (TCNT1 * 64UL) / (F_CPU/1000);
+}
+
+void timer1_init() {
+    TCCR1B |= (1<<CS11) | (1<<CS10); // Prescaler 64
+}
+
+// Fungsi autoAdjust
+void autoAdjustvMid(double Amp, double vDelta) {
+    if (Amp < 20.0)
+        vMid = vDelta;
+}
+
+int main(void) {
+    uart_init(MYUBRR);
+    adc_init();
+    timer1_init();
+    
+    uart_print("-----------------------------------------------------\r\n");
+    uart_print("APA-ITU : ACS712 5V DC load, analisa dan kalibrasi\r\n");
+    uart_print("-----------------------------------------------------\r\n");
+
+    while (1) {
+        double adc = 0;
+        double analog0 = adc_read(0);
+        for (int i = 0; i < iter; i++) {
+            adc += adc_read(0);
+        }
+        double avg_adc = adc / iter;
+        double vAvg = (avg_adc / 1023.0) * vRef;
+        double vDelta = vMid - vAvg;
+        double Amp = vDelta / mVpA;
+        
+        if (millis_timer() - awalPrint > jeda) {
+            awalPrint = millis_timer();
+            uart_print("Jeda \t: "); uart_print_num(jeda); uart_print(" ms\r\n");
+            uart_print("ADC A0 \t: "); uart_print_num(analog0); uart_print(" , ");
+            uart_print_num(avg_adc); uart_print(" (avg_adc)\r\n");
+            uart_print("sumADC \t: "); uart_print_num(adc); uart_print(" , ");
+            uart_print_num(adc - pADC); uart_print(" Deviation\r\n");
+            uart_print("vRef \t: "); uart_print_num(vRef); uart_print(" mV\r\n");
+            uart_print("vMid \t: "); uart_print_num(vMid); uart_print(" mV\r\n");
+            uart_print("vAvg \t: "); uart_print_num(vAvg); uart_print(" mV\r\n");
+            uart_print("vDelta \t: "); uart_print_num(vDelta); uart_print(" mV\r\n");
+            uart_print("Amp \t: "); uart_print_num(Amp); uart_print(" mA\r\n");
+            uart_print("-----------------------------------------------------\r\n");
+            pADC = adc;
+        }
+        
+        // Cek perintah dari UART
+        if (UCSR0A & (1<<RXC0)) {
+            unsigned char c = UDR0;
+            double vRefOld = vRef;
+            double vMidOld = vMid;
+            int iterOld = iter;
+            unsigned long jedaOld = jeda;
+            
+            if (c == '+') vMid++;
+            if (c == '-') vMid--;
+            if (c == '1') vMid -= 0.25;
+            if (c == '2') vMid += 0.25;
+            if (c == 'V') vRef += 10;
+            if (c == 'v') vRef -= 10;
+            if (c == 'I') iter += 1000;
+            if (c == 'i') iter -= 1000;
+            if (c == 'J') jeda += 1000;
+            if (c == 'j') jeda -= 1000;
+            if (c == '0') vMid = vAvg;
+            if (c == 'a') autoAdjustvMid(Amp, vDelta);
+            
+            if (vMid != vMidOld) {
+                uart_print("Prev vMid \t: "); uart_print_num(vMidOld); uart_print(" New vMid \t: "); uart_print_num(vMid); uart_print("\r\n");
+            }
+            if (vRef != vRefOld) {
+                uart_print("Prev vRef \t: "); uart_print_num(vRefOld); uart_print(" New vRef \t: "); uart_print_num(vRef); uart_print("\r\n");
+            }
+            if (iter != iterOld) {
+                uart_print("Prev iter \t: "); uart_print_num(iterOld); uart_print(" New iter \t: "); uart_print_num(iter); uart_print("\r\n");
+            }
+            if (jeda != jedaOld) {
+                uart_print("Prev jeda \t: "); uart_print_num(jedaOld); uart_print(" New jeda \t: "); uart_print_num(jeda); uart_print("\r\n");
+            }
+            uart_print("-----------------------------------------------------\r\n");
+        }
+        
+        _delay_ms(1000);
+    }
+}

@@ -1,0 +1,163 @@
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include <math.h>
+
+#define F_CPU 16000000UL
+#define BAUD 9600
+#define MYUBRR F_CPU/16/BAUD-1
+
+// ------------------- UART -------------------
+void uart_init(unsigned int ubrr) {
+    UBRR0H = (unsigned char)(ubrr>>8);
+    UBRR0L = (unsigned char)ubrr;
+    UCSR0B = (1<<TXEN0) | (1<<RXEN0);    // Enable TX & RX
+    UCSR0C = (1<<UCSZ01) | (1<<UCSZ00);  // 8-bit data
+}
+
+void uart_transmit(unsigned char data) {
+    while (!(UCSR0A & (1<<UDRE0)));
+    UDR0 = data;
+}
+
+void uart_print(const char *str) {
+    while(*str) {
+        uart_transmit(*str++);
+    }
+}
+
+void uart_print_num(double val) {
+    char buf[32];
+    dtostrf(val, 0, 2, buf);
+    uart_print(buf);
+}
+
+// ------------------- ADC -------------------
+void adc_init(void) {
+    ADMUX = (1<<REFS0); // AVcc as reference
+    ADCSRA = (1<<ADEN) | (1<<ADPS2) | (1<<ADPS1);  // Enable ADC, prescaler 64
+}
+
+uint16_t adc_read(uint8_t ch) {
+    ch &= 0b00000111; // Mask to 3 bits
+    ADMUX = (ADMUX & 0xF8) | ch;
+    ADCSRA |= (1<<ADSC);
+    while (ADCSRA & (1<<ADSC));
+    return ADC;
+}
+
+// ------------------- Timer -------------------
+void timer1_init() {
+    TCCR1B |= (1<<CS11) | (1<<CS10); // Prescaler 64
+}
+
+unsigned long millis_timer() {
+    return (TCNT1 * 64UL) / (F_CPU / 1000);
+}
+
+// ------------------- ZMPT101B Constants & Functions -------------------
+#define VOLTAGE_CHANNEL 0
+#define VOLT_WINDOW_SIZE 200
+
+uint16_t volt_samples[VOLT_WINDOW_SIZE];
+uint16_t volt_index = 0;
+
+void add_volt_sample(uint16_t val) {
+    volt_samples[volt_index++] = val;
+    if (volt_index >= VOLT_WINDOW_SIZE) volt_index = 0;
+}
+
+float calculate_sigma(void) {
+    float mean = 0, sum_sq = 0;
+    for (uint16_t i = 0; i < VOLT_WINDOW_SIZE; i++) mean += volt_samples[i];
+    mean /= VOLT_WINDOW_SIZE;
+    for (uint16_t i = 0; i < VOLT_WINDOW_SIZE; i++)
+        sum_sq += (volt_samples[i] - mean) * (volt_samples[i] - mean);
+    return sqrt(sum_sq / VOLT_WINDOW_SIZE);
+}
+
+// ------------------- ACS712 Constants & Functions -------------------
+#define CURRENT_CHANNEL 1
+
+double vRef = 4720.0;
+double vMid = 2360.0;
+double mVpA = 0.185;
+int iter = 2000;
+unsigned long prev_print = 0;
+unsigned long jeda = 5000;
+double prev_adc_sum = 0;
+
+void autoAdjustvMid(double Amp, double vDelta) {
+    if (Amp < 20.0)
+        vMid = vDelta;
+}
+
+// ------------------- Main -------------------
+int main(void) {
+    uart_init(MYUBRR);
+    adc_init();
+    timer1_init();
+
+    uart_print("Monitoring Tegangan dan Arus Dimulai...\r\n");
+
+    while (1) {
+        // ---- Tegangan (ZMPT101B) ----
+        uint16_t volt_val = adc_read(VOLTAGE_CHANNEL);
+        add_volt_sample(volt_val);
+        _delay_ms(5);
+
+        float sigma = calculate_sigma();
+        float voltage = (-0.04 + 0.0964 * sigma) * 49.3231;
+
+        char volt_buf[40];
+        snprintf(volt_buf, sizeof(volt_buf), "Voltage: %.2f V\r\n", voltage);
+        uart_print(volt_buf);
+
+        // ---- Arus (ACS712) ----
+        double adc_sum = 0;
+        for (int i = 0; i < iter; i++) {
+            adc_sum += adc_read(CURRENT_CHANNEL);
+        }
+
+        double avg_adc = adc_sum / iter;
+        double vAvg = (avg_adc / 1023.0) * vRef;
+        double vDelta = vMid - vAvg;
+        double Amp = vDelta / mVpA;
+
+        if (millis_timer() - prev_print >= jeda) {
+            prev_print = millis_timer();
+            uart_print("---- Sensor Arus ----\r\n");
+            uart_print("Jeda: "); uart_print_num(jeda); uart_print(" ms\r\n");
+            uart_print("avg_ADC: "); uart_print_num(avg_adc); uart_print("\r\n");
+            uart_print("vRef: "); uart_print_num(vRef); uart_print(" mV\r\n");
+            uart_print("vMid: "); uart_print_num(vMid); uart_print(" mV\r\n");
+            uart_print("vAvg: "); uart_print_num(vAvg); uart_print(" mV\r\n");
+            uart_print("vDelta: "); uart_print_num(vDelta); uart_print(" mV\r\n");
+            uart_print("Current: "); uart_print_num(Amp); uart_print(" mA\r\n");
+            uart_print("----------------------\r\n");
+
+            prev_adc_sum = adc_sum;
+        }
+
+        // ---- Perintah UART untuk kalibrasi ----
+        if (UCSR0A & (1<<RXC0)) {
+            char c = UDR0;
+            if (c == '+') vMid++;
+            else if (c == '-') vMid--;
+            else if (c == '1') vMid -= 0.25;
+            else if (c == '2') vMid += 0.25;
+            else if (c == 'V') vRef += 10;
+            else if (c == 'v') vRef -= 10;
+            else if (c == 'I') iter += 1000;
+            else if (c == 'i') iter -= 1000;
+            else if (c == 'J') jeda += 1000;
+            else if (c == 'j') jeda -= 1000;
+            else if (c == '0') vMid = vAvg;
+            else if (c == 'a') autoAdjustvMid(Amp, vDelta);
+
+            uart_print("Parameter disesuaikan.\r\n");
+        }
+
+        _delay_ms(1000);
+    }
+}
